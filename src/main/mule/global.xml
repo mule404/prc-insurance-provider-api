@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:json-logger="http://www.mulesoft.org/schema/mule/json-logger" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/json-logger http://www.mulesoft.org/schema/mule/json-logger/current/mule-json-logger.xsd">
+	<http:request-config name="HTTP_Request_configuration_PG" doc:name="HTTP Request configuration" doc:id="400831e5-6b68-4ce7-bebd-d62f493349ad" >
+		<http:request-connection host="${sysapi.pstgres.host}" port="${sysapi.pstgres.port}" />
+	</http:request-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="db280989-0ca9-4fd2-8a5d-e4ec3bd55518" file="config.yaml" />
+	<http:request-config name="HTTP_Request_configuration_SF" doc:name="HTTP Request configuration" doc:id="6c245224-5377-43f0-bcc5-4053d823cdda" >
+		<http:request-connection host="${sysapi.salesforce.host}" port="${sysapi.salesforce.port}" />
+	</http:request-config>
+	<http:request-config name="HTTP_Request_configuration_insuranceservice" doc:name="HTTP Request configuration" doc:id="285a017a-35b1-4195-b2eb-11af495fdba4" >
+		<http:request-connection host="${db.host}" port="${db.port}" />
+	</http:request-config>
+	<json-logger:config name="JSON_Logger_Config" doc:name="JSON Logger Config" doc:id="db0ded5e-5e4b-4655-b5d7-550a5b5b6490" applicationName="${jsonlogger.applicationName}" applicationVersion="${jsonlogger.version}" environment="${mule.env}"/>
+</mule>

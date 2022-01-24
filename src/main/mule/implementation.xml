@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:json-logger="http://www.mulesoft.org/schema/mule/json-logger" xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/json-logger http://www.mulesoft.org/schema/mule/json-logger/current/mule-json-logger.xsd">
+	<sub-flow name="responseaccumlationPG" doc:id="e9beb03c-c1f1-4337-ba8e-fd670a80b8e2" >
+		<set-variable value="payload" doc:name="Set Variable" doc:id="cba9ab13-de49-45c7-8e20-c4dc43e5eed0" variableName="pyload"/>
+		<foreach doc:name="For Each" doc:id="a6675427-798c-4923-9c64-a0f6be4cba33" >
+			<try doc:name="Try" doc:id="7cc013bd-9f0a-4745-a94a-852e243b1f6a" >
+				<http:request method="GET" doc:name="callExternalInsurance" doc:id="dfb7a1a1-3a6d-4944-9196-46e865b47280" config-ref="HTTP_Request_configuration_insuranceservice" path="/api/insurer" responseTimeout="100000">
+					<http:headers ><![CDATA[#[output application/java
+---
+{
+	client_secret : 1233,
+	client_id : 1233
+}]]]></http:headers>
+					<http:query-params ><![CDATA[#["insurerName" : payload.insurer_names as String]]]></http:query-params>
+				</http:request>
+				<http:request method="POST" doc:name="callPGUpdate" doc:id="711a8e84-89d0-46ac-9d49-a232d5a41efa" config-ref="HTTP_Request_configuration_PG" path="/api/postgres/update" responseTimeout="1000000">
+							<http:body><![CDATA[#[%dw 2.0
+output application/json
+---
+{
+"ID__c": vars.id,
+"Insurer_names__c": vars.result.InsurerName,
+"Premiumum_amt__c": vars.result.PremiumAmount,
+"cover_amt__c": vars.result.CoverAmount,
+"parents_included__c": vars.result.ParentsIncluded
+}]]]></http:body>
+							<http:headers><![CDATA[#[output application/java
+---
+{
+	client_secret : 5326,
+	client_id : 12345
+}]]]></http:headers>
+						</http:request>
+				<error-handler >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="f7dfb655-0c55-4417-ac08-4f55aeb8f48f" >
+						<json-logger:logger doc:name="Logger" doc:id="7860fc4a-30c5-4cc3-a428-75650df8b19c" config-ref="JSON_Logger_Config" message='#["error occured at while calling exp insurance service" ++ now()]'/>
+					</on-error-continue>
+				</error-handler>
+			</try>
+		</foreach>
+	</sub-flow>
+	<sub-flow name="responseaccumlationflow" doc:id="06521db5-d60b-440c-9cfd-f52d2e5d7ac0" >
+		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="af2e03f3-708d-44e9-a290-22fda4734787" variableName="pyload"/>
+		<foreach doc:name="For Each" doc:id="5bb3422f-4480-4640-bf8e-f363d8a460a3" collection="#[vars.pyload]">
+			<try doc:name="Try" doc:id="0d15c472-8005-4ed5-ae0d-8ba964d878b1">
+						<http:request method="GET" doc:name="callExternalInsurance" doc:id="d27e968b-76b5-432e-8dd5-0bc57a01b175" config-ref="HTTP_Request_configuration_insuranceservice" path="/api/insurer" responseTimeout="100000" target="result">
+							<http:headers><![CDATA[#[output application/java
+---
+{
+	client_secret : 12445,
+	client_id : 111
+}]]]></http:headers>
+							<http:query-params><![CDATA[#["insurerName" : payload.insurer_names as String]]]></http:query-params>
+						</http:request>
+				<http:request method="POST" doc:name="callSalesforceUpdate" doc:id="ac64844f-4227-464e-a176-7cb61a9e70a3" config-ref="HTTP_Request_configuration_SF" path="/api/sfdc/sfdc/update" responseTimeout="1000000">
+					<http:body><![CDATA[#[%dw 2.0
+output application/json
+---
+{
+"ID__c": vars.id,
+"Insurer_names__c": vars.result.InsurerName,
+"Premiumum_amt__c": vars.result.PremiumAmount,
+"cover_amt__c": vars.result.CoverAmount,
+"parents_included__c": vars.result.ParentsIncluded
+}]]]></http:body>
+					<http:headers><![CDATA[#[output application/java
+---
+{
+	client_secret : 1234,
+	client_id : 1234
+}]]]></http:headers>
+				</http:request>
+				<error-handler>
+							<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="5e727eac-752b-423c-91fa-a4a72e4c320c">
+								<json-logger:logger doc:name="Logger" doc:id="d92c4ee0-9fcf-46d7-bbac-4278fd66bf18" message='#["error occured at while calling exp insurance service" ++ now()]' config-ref="JSON_Logger_Config" />
+							</on-error-continue>
+						</error-handler>
+					</try>
+			<logger level="INFO" doc:name="Logger" doc:id="1b4d8808-c5ef-4eef-93e9-954e14710efc" message="#[payload]"/>
+		</foreach>
+	</sub-flow>
+	<flow name="getCompanyInfoFlow" doc:id="94073111-0e1b-4f71-b311-ef698ebc0430" >
+		<choice doc:name="Choice" doc:id="30b4ba02-71ac-4b0c-ae49-c4dc86fca754" >
+			<when expression="#[attributes.queryParams.ID &gt; 13 and attributes.queryParams.ID &lt; 17]">
+				<http:request method="GET" doc:name="callPG" doc:id="19b62f9f-6355-4dbd-8d08-73835f3d555b" path="/api/postgres/select" config-ref="HTTP_Request_configuration_PG" responseTimeout="100000">
+					<http:headers ><![CDATA[#[output application/java
+---
+{
+	client_secret : 123454,
+	client_id : 1234
+}]]]></http:headers>
+					<http:query-params ><![CDATA[#[output application/java
+---
+{
+	ID : attributes.queryParams.ID
+}]]]></http:query-params>
+				</http:request>
+			</when>
+			<when expression="#[attributes.queryParams.ID &gt; 9 and attributes.queryParams.ID &lt; 13]">
+				<http:request method="GET" doc:name="callSF" doc:id="722f7a4f-0ede-4739-9c47-17a27a4c955b" config-ref="HTTP_Request_configuration_SF" path="/api/sfdc/sfdc/select" responseTimeout="100000">
+					<http:headers ><![CDATA[#[output application/java
+---
+{
+	client_secret : 123454,
+	client_id : 1234
+}]]]></http:headers>
+					<http:query-params ><![CDATA[#[output application/java
+---
+{
+	ID : attributes.queryParams.ID
+}]]]></http:query-params>
+				</http:request>
+			</when>
+			<otherwise>
+				<ee:transform doc:name="Transform Message" doc:id="255d52a7-beae-410e-b0d9-57e26ab23ea2" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message: "Enter Valid ID"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="postCompanyInfoFlow" doc:id="97ab4aa0-c33f-49f9-81eb-4f8234a74f33" >
+		<choice doc:name="Choice" doc:id="04b0ba62-ef22-4d62-b238-b3dba3eec0cf" >
+			<when expression="#[payload.companyID &gt; 13 and payload.companyID &lt; 17]">
+				<flow-ref doc:name="callPG_flowref" doc:id="2f313bdd-5226-44fb-ba79-f3eb6c069ae5" name="callPostgressflow"/>
+			</when>
+			<when expression="#[payload.companyID &gt; 9 and payload.companyID &lt; 13]">
+				<flow-ref doc:name="callSF_flowref" doc:id="a8966c29-e359-43c3-9a7f-7be44a84fd6d" name="callSalesforceFlow"/>
+			</when>
+		</choice>
+	</flow>
+	<sub-flow name="callPostgressflow" doc:id="ea51d867-9f24-41a8-abb4-1a34544ffdb8" >
+		<set-variable value="#[payload.companyID]" doc:name="getID" doc:id="ad8caedb-c9dd-4492-9ee6-e8307c844980" variableName="id"/>
+		<set-variable value='"PG"' doc:name="method_identifier" doc:id="55ecd839-b040-431f-b230-f05ce7fdf24e" variableName="method"/>
+		<http:request method="GET" doc:name="Request" doc:id="70cdc137-e05c-4220-8d49-898565eddf1b" config-ref="HTTP_Request_configuration_PG" path="/api/postgres/select" responseTimeout="1000000">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	client_secret : 1234,
+	client_id : 12345
+}]]]></http:headers>
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	ID : payload.companyID
+}]]]></http:query-params>
+		</http:request>
+		<validation:is-false doc:name="Is false" doc:id="d93f0a4e-61f0-4330-955e-776c983a6679" expression="#[isEmpty(payload)]" message='"InsurersList Empty!"'/>
+		<ee:transform doc:name="Transform Message" doc:id="a44563ad-f6f9-4468-b5bb-df37099eac5c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map {
+  "insurer_names": $.insurer_name as String
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="call_responseaccumlationflow" doc:id="6b3975b0-ed31-4814-80c5-a307a8808597" name="responseaccumlationPG"/>
+	</sub-flow>
+	<sub-flow name="callSalesforceFlow" doc:id="fcc86375-7921-4e25-9066-5ce5d33774b0" >
+		<set-variable value="#[payload.companyID]" doc:name="GetID" doc:id="eb644596-e7bf-4660-a6f8-8433008bb447" variableName="id"/>
+		<set-variable value='""SF"' doc:name="method_identifier" doc:id="be973488-1c3e-4ee1-b370-9e7eb4ff80e3" variableName="Method"/>
+		<http:request method="GET" doc:name="Request" doc:id="3e84852d-afc5-4a33-a91b-1f21f380bdae" config-ref="HTTP_Request_configuration_SF" path="/api/sfdc/sfdc/select" responseTimeout="1000000">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	client_secret : 1234,
+	client_id : 12345
+}]]]></http:headers>
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	ID : payload.companyID
+}]]]></http:query-params>
+		</http:request>
+		<validation:is-false doc:name="Is false" doc:id="53c2e0ba-ffc0-4db3-80bc-38417d1ffdb2" expression="#[isEmpty(payload)]" message='"InsurersList Empty!"'/>
+		<ee:transform doc:name="Transform Message" doc:id="194cd5f1-3780-4273-8d5a-36eb077085e2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map {
+  "insurer_names": $.insurer_name as String
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="call_responseaccumlationflow" doc:id="2b629d06-2027-481b-8345-cfc40a047145" name="responseaccumlationflow"/>
+	</sub-flow>
+</mule>

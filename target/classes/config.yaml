@@ -1,0 +1,20 @@
+sysapi:
+ pstgres:
+  host: "sys-companyinfo-postgres.us-e2.cloudhub.io/"
+  port: "80"
+ salesforce:
+  host: "sys-companyinfo-salesforce.us-e2.cloudhub.io/"
+  port: "80"
+
+
+db:
+ host: "sys-external-insurance.us-e2.cloudhub.io/"
+ port: "80"
+ 
+ 
+jsonlogger:
+  applicationName: "prc-insurance-provider-api"
+  version: "v1"
+
+mule:
+  env: "prod"
